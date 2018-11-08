@@ -1,0 +1,152 @@
+We will write a simple program in which we will validate login screen by taking multiple usernames and passwords. The annotated method must return object[][] where each object[] can be assigned to the test method one as username and the other parameter as password.
+
+Step 1: First create a method to read excel data and return string array.
+Step 2: Create before class and after class methods which helps in getting the browser and closing them when done.
+Step 3: Create a data provider which actually gets the values by reading the excel.
+Step 4: Create a Test which takes two parameters username and password.
+Step 5: Add dataprovider name for @Test method to receive data from dataprovider.
+
+
+
+
+
+
+
+
+
+
+package com.pack;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+import org.testng.Assert;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+
+import jxl.Sheet;
+import jxl.Workbook;
+import jxl.read.biff.BiffException;
+
+public class ReadExcelDataProvider {
+	public WebDriver driver;
+	public WebDriverWait wait;
+	String appURL = "https://www.linkedin.com/";
+	
+	//Locators
+	private By byEmail = By.id("session_key-login");
+	private By byPassword = By.id("session_password-login");
+	private By bySubmit = By.id("signin");
+	private By byError = By.id("global-alert-queue");
+	
+	@BeforeClass
+	public void testSetup() {
+		driver=new FirefoxDriver();
+		driver.manage().window().maximize();
+		wait = new WebDriverWait(driver, 5);
+	}
+	
+
+	@Test(dataProvider="empLogin")
+	public void VerifyInvalidLogin(String userName, String password) {
+		driver.navigate().to(appURL);
+		driver.findElement(byEmail).sendKeys(userName);
+		driver.findElement(byPassword).sendKeys(password);
+		//wait for element to be visible and perform click
+		wait.until(ExpectedConditions.visibilityOfElementLocated(bySubmit));
+		driver.findElement(bySubmit).click();
+		
+		//Check for error message
+		wait.until(ExpectedConditions.presenceOfElementLocated(byError));
+		String actualErrorDisplayed = driver.findElement(byError).getText();
+		String requiredErrorMessage = "Please correct the marked field(s) below.";
+		Assert.assertEquals(requiredErrorMessage, actualErrorDisplayed);
+		
+	}
+	
+	@DataProvider(name="empLogin")
+	public Object[][] loginData() {
+		Object[][] arrayObject = getExcelData("D:/sampledoc.xls","Sheet1");
+		return arrayObject;
+	}
+
+	/**
+	 * @param File Name
+	 * @param Sheet Name
+	 * @return
+	 */
+	public String[][] getExcelData(String fileName, String sheetName) {
+		String[][] arrayExcelData = null;
+		try {
+			FileInputStream fs = new FileInputStream(fileName);
+			Workbook wb = Workbook.getWorkbook(fs);
+			Sheet sh = wb.getSheet(sheetName);
+
+			int totalNoOfCols = sh.getColumns();
+			int totalNoOfRows = sh.getRows();
+			
+			arrayExcelData = new String[totalNoOfRows-1][totalNoOfCols];
+			
+			for (int i= 1 ; i < totalNoOfRows; i++) {
+
+				for (int j=0; j < totalNoOfCols; j++) {
+					arrayExcelData[i-1][j] = sh.getCell(j, i).getContents();
+				}
+
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+			e.printStackTrace();
+		} catch (BiffException e) {
+			e.printStackTrace();
+		}
+		return arrayExcelData;
+	}
+
+	@Test
+	public void tearDown() {
+		driver.quit();
+	}
+}
+
+
+
+
+
+
+
+After clicking on login button, we are using WebdriverWaits to Check for error message and validate.
+
+The output should look like below:
+
+
+
+[TestNG] Running:
+  C:\Users\easy\AppData\Local\Temp\testng-eclipse-583753747\testng-customsuite.xml
+
+PASSED: VerifyInvalidLogin("testuser1", "testpassword1")
+PASSED: VerifyInvalidLogin("testuser2", "testpassword2")
+PASSED: VerifyInvalidLogin("testuser3", "testpassword3")
+PASSED: VerifyInvalidLogin("testuser4", "testpassword4")
+PASSED: VerifyInvalidLogin("testuser5", "testpassword5")
+
+===============================================
+    Default test
+    Tests run: 5, Failures: 0, Skips: 0
+===============================================
+
+
+===============================================
+Default suite
+Total tests run: 5, Failures: 0, Skips: 0
+===============================================
